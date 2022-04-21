@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="ogg-spi">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/ogg-spi/jogg-0.0.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/ogg-spi/tritonus_jorbis-0.3.6.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/ogg-spi/jorbis-0.0.15.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
