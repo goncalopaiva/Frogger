@@ -1,37 +1,89 @@
 package edu.ufp.inf.sd.rmi.client;
 
-import edu.ufp.inf.sd.rmi.client.ObserverRI;
+import edu.ufp.inf.sd.rmi.client.frogger.Main;
 import edu.ufp.inf.sd.rmi.server.FroggerGameRI;
-import edu.ufp.inf.sd.rmi.server.State;
+import edu.ufp.inf.sd.rmi.server.State.State;
+import edu.ufp.inf.sd.rmi.server.State.StateTransito;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
 public class ObserverImpl extends UnicastRemoteObject implements ObserverRI {
 
-    private String id;
-    private FroggerClient client;
-    private State lastObserverState;
-    protected FroggerGameRI subjectRI;
+    private FroggerGameRI game;
+    private State state;
 
-    public ObserverImpl(String id, FroggerClient client, FroggerGameRI subjectRI) throws RemoteException{
+    private boolean gameReady;
+    private Main gameInst;
+    public int playerNumber;
+    private String username;
+
+    protected ObserverImpl() throws RemoteException {
         super();
-        this.client = client;
-        this.id = id;
-        this.lastObserverState =  new State(id,"");
-        this.subjectRI = subjectRI;
-        this.subjectRI.attach(this);
+        gameReady = false;
     }
 
     @Override
-    public void update() throws RemoteException{
-        this.lastObserverState=subjectRI.getState();
-        //this.chatFrame.updateTextArea();
-        this.client.updateGamesDecorrer();
-        this.client.updateUsers();
+    public void setGame(FroggerGameRI game) throws RemoteException {
+        this.game = game;
     }
 
-    protected State getLastObserverState(){
-        return this.lastObserverState;
+    @Override
+    public void waitUsers() throws RemoteException{
+        //JOptionPane.showConfirmDialog(null, "Waiting for other users");
+        System.out.println("ObserverImpl -> waitUsers -> Waiting for other users");
+    }
+
+    @Override
+    public void update(State state) throws RemoteException {
+        if(!gameReady) {
+
+            Runnable runnable = () -> {
+                try {
+                    this.gameInst = new Main(playerNumber);
+                    this.gameInst.dificuldade = this.game.getDificuldade();
+                    this.gameInst.username = this.username;
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+                this.gameInst.run();
+            };
+
+            Thread thread = new Thread(runnable);
+            thread.start();
+            gameReady = true;
+
+        }
+        this.state = state;
+    }
+
+    @Override
+    public void move(Integer playerIndex, Integer direction) throws RemoteException {
+        if(gameInst != null) gameInst.move(playerIndex, direction);
+    }
+
+
+    @Override
+    public void moverTransito(StateTransito event) throws RemoteException {
+        if(gameInst != null) {
+            gameInst.transito(event.getType(), event.getPosition(), event.getVelocity(),
+                    event.getSpriteName(), event.getDeltaMs());
+        }
+    }
+
+
+    @Override
+    public void setPlayerNumber(Integer number) throws RemoteException{
+        playerNumber = number;
+    }
+
+    @Override
+    public String getUsername() throws RemoteException {
+        return username;
+    }
+
+    @Override
+    public void setUsername(String username) throws RemoteException{
+        this.username = username;
     }
 }

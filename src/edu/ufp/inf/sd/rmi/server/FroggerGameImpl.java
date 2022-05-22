@@ -1,8 +1,7 @@
 package edu.ufp.inf.sd.rmi.server;
 
-
 import edu.ufp.inf.sd.rmi.client.ObserverRI;
-import edu.ufp.inf.sd.rmi.client.frogger.Main;
+import edu.ufp.inf.sd.rmi.server.State.State;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -10,50 +9,69 @@ import java.util.ArrayList;
 
 public class FroggerGameImpl extends UnicastRemoteObject implements FroggerGameRI {
 
-    private State subjectState;
-    private ArrayList<ObserverRI> observers = new ArrayList<>();
+    private ArrayList<ObserverRI> observers;
+    private State state;
 
-    protected FroggerGameImpl() throws RemoteException {
+    private int dificuldade;
+
+    public FroggerGameImpl(int dificuldade) throws RemoteException{
         super();
-        this.subjectState = new State("","");
-    }
-
-
-    @Override
-    public void attach(ObserverRI observerRI) throws RemoteException{
-        if(!this.observers.contains(observerRI)) this.observers.add(observerRI);
+        this.dificuldade = dificuldade;
+        this.observers = new ArrayList<>();
     }
 
     @Override
-    public void detach(ObserverRI obsRI) throws RemoteException {
-        this.observers.remove(obsRI);
+    public int getDificuldade() throws RemoteException{
+        return dificuldade;
     }
 
     @Override
-    public State getState() throws RemoteException {
-        return this.subjectState;
+    public void setDificuldade(int dificuldade) throws RemoteException {
+        this.dificuldade = dificuldade;
     }
 
     @Override
-    public void setGameState(State state) throws RemoteException{
-        this.subjectState = state;
-        //this.notifyAllObservers();
-    }
+    public void attachGame(ObserverRI observer) throws RemoteException {
+        observers.add(observer);
+        observer.setGame(this);
+        observer.setPlayerNumber(observers.size() -1); //TODO
 
-    @Override
-    public void startGame() throws RemoteException {
-        System.out.println("Server -> FroggerGameImpl -> startGame()");
 
-    }
-
-    public void notifyAllObservers() throws RemoteException{
-        for(ObserverRI obs : observers){
-            try{
-                obs.update();
-            } catch (RemoteException ex){
-                System.out.println(ex.toString());
-            }
+        if (observers.size() == 2) {
+            updateGameState();
         }
+        else {
+         for (ObserverRI observerRI : observers) {
+             observerRI.waitUsers();
+         }
+        }
+
+
+
+        System.out.println("FroggerGameImpl -> attachGame()");
+    }
+
+    @Override
+    public void dettachGame(ObserverRI observer) throws RemoteException {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void updateGameState() throws RemoteException {
+        for(ObserverRI observer : observers) {
+            observer.update(this.state);
+        }
+    }
+
+    @Override
+    public void setGameState(State state) throws RemoteException {
+        this.state = state;
+        updateGameState();
+    }
+
+    @Override
+    public State getGameState() throws RemoteException {
+        return this.state;
     }
 
 

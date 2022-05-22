@@ -1,18 +1,25 @@
 package edu.ufp.inf.sd.rmi.server;
 
 import edu.ufp.inf.sd.rmi.client.ObserverRI;
+import edu.ufp.inf.sd.rmi.server.State.State;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface FroggerGameRI extends Remote {
-    void attach(ObserverRI observerRI) throws RemoteException;
 
-    void detach(ObserverRI obsRI) throws RemoteException;
 
-    State getState() throws RemoteException;
+    int getDificuldade() throws RemoteException;
+
+    void setDificuldade(int dificuldade) throws RemoteException;
+
+    void attachGame(ObserverRI observer) throws RemoteException;
+
+    void dettachGame(ObserverRI observer) throws RemoteException;
+
+    void updateGameState() throws RemoteException;
 
     void setGameState(State state) throws RemoteException;
 
-    void startGame() throws RemoteException;
+    State getGameState() throws RemoteException;
 }

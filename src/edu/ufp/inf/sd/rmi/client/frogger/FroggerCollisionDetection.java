@@ -24,11 +24,10 @@
  */
 
 package edu.ufp.inf.sd.rmi.client.frogger;
+import java.util.List;
 
 import jig.engine.physics.AbstractBodyLayer;
 import jig.engine.util.Vector2D;
-
-import java.util.List;
 
 public class FroggerCollisionDetection  {
 

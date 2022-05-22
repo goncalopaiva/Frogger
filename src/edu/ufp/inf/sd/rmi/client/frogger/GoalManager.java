@@ -25,11 +25,11 @@
 
 package edu.ufp.inf.sd.rmi.client.frogger;
 
-import jig.engine.util.Vector2D;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+
+import jig.engine.util.Vector2D;
 
 
 public class GoalManager {

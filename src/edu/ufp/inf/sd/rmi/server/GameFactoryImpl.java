@@ -29,7 +29,6 @@ public class GameFactoryImpl extends UnicastRemoteObject implements GameFactoryR
             if (!sessions.containsKey(username)) {
                 GameSessionRI sessionRI = new GameSessionImpl(this.server, db.getUserByCredentials(username, password));
                 this.sessions.put(username, sessionRI);
-                //this.server.getSessions().put(username, sessionRI);
                 System.out.println("GameFactoryImpl -> User " + username + " login.");
                 db.addSession(username, sessionRI);
                 return sessionRI;

@@ -8,19 +8,20 @@ package edu.ufp.inf.sd.rmi.server;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class GameSessionImpl extends UnicastRemoteObject implements GameSessionRI {
 
     private DB db;
-    private HashMap<String, FroggerGameRI> games;
+    private ArrayList<FroggerGameRI> games;
     private FroggerServer server;
     private User user;
     private String username;
 
     public GameSessionImpl(FroggerServer server, User user) throws RemoteException {
         super();
-        this.games = new HashMap<>();
+        this.games = new ArrayList<>();
         this.server = server;
         this.user = user;
         this.username = user.getName();
@@ -38,41 +39,26 @@ public class GameSessionImpl extends UnicastRemoteObject implements GameSessionR
     }
 
     @Override
-    public HashMap getGames() throws RemoteException{
+    public ArrayList<FroggerGameRI> getGames() throws RemoteException {
         return this.games;
     }
 
     @Override
     public FroggerGameRI createGame(int dificuldade) throws RemoteException{
-        FroggerGameRI froggerGameRI = new FroggerGameImpl();
-        games.put(user.getName(), froggerGameRI);
+        FroggerGameRI froggerGameRI = new FroggerGameImpl(dificuldade);
+        games.add(froggerGameRI);
         db.addGame(user.getName(), froggerGameRI);
-        return  froggerGameRI;
+        return froggerGameRI;
     }
 
     @Override
-    public String listFoggerGames() throws RemoteException{
-        StringBuilder stringBuilder = new StringBuilder();
-        /*if (!db.getGames().isEmpty()){
-            for (FroggerGameImpl fg : db.getGames()) {
-                stringBuilder.append(fg.toString()).append("\n");
-            }
-            return stringBuilder.toString();
-        }
-
-         */
-        return "No games";
+    public void createGame1(int dificuldade) throws RemoteException {
+        FroggerGameRI froggerGameRI = new FroggerGameImpl(dificuldade);
+        games.add(froggerGameRI);
+        db.addGame(user.getName(), froggerGameRI);
     }
 
-    /*
-    @Override
-    public FroggerGameRI newGame(FroggerClient client, int dificuldade) throws RemoteException {
-        FroggerGameRI game = new FroggerGameImpl();
-        this.games.put(user.getName(), game);
-        return game;
-    }
 
-     */
 
 }
 

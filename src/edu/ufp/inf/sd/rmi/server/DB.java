@@ -1,8 +1,7 @@
 package edu.ufp.inf.sd.rmi.server;
 
+import edu.ufp.inf.sd.rmi.client.FroggerClient;
 import edu.ufp.inf.sd.rmi.client.ObserverRI;
-import edu.ufp.inf.sd.rmi.server.GameSessionRI;
-import edu.ufp.inf.sd.rmi.server.User;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -17,6 +16,10 @@ public class DB extends UnicastRemoteObject {
     private final HashMap<String, GameSessionRI> sessions;
     private final HashMap<String, FroggerGameRI> games;
     private final HashMap<String, ObserverRI> workers;
+
+    public FroggerGameRI game;
+
+    public FroggerClient client;
 
     private DB() throws RemoteException {
         this.users = new HashSet<>();
@@ -44,8 +47,6 @@ public class DB extends UnicastRemoteObject {
     public Set<User> getUsers() {
         return users;
     }
-
-
 
     public boolean existsUser(String uname, String pw) throws RemoteException {
         for (User u : this.users) {

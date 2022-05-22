@@ -1,6 +1,5 @@
 package edu.ufp.inf.sd.rmi.client;
 
-import edu.ufp.inf.sd.rmi.client.frogger.Main;
 import edu.ufp.inf.sd.rmi.server.*;
 import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
 
@@ -12,6 +11,7 @@ import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -25,24 +25,17 @@ public class FroggerClient extends JFrame {
     private GameFactoryRI gameFactoryRI;
     private GameSessionRI gameSessionRI;
     private FroggerGameRI froggerGameRI;
-    private ObserverRI observerRI;
+    private ObserverImpl observer;
+
+    private int dif;
 
     public FroggerClient(String args[]) throws RemoteException {
         this.db = DB.getInstance();
+        db.client = this;
 
         initContext(args);
 
-
         login();
-        //this.gameSessionRI = gameFactoryRI.login("admin", "admin");
-
-
-        System.out.println("SESSIONS:");
-        System.out.println(gameFactoryRI.getSessions().toString());
-
-        froggerGameRI = gameSessionRI.createGame(1);
-        initObserver(args);
-
 
         dashboard();
 
@@ -61,9 +54,9 @@ public class FroggerClient extends JFrame {
         }
     }
 
-    private void initObserver(String args[]) {
+    private void initObserver() {
         try {
-            observerRI = new ObserverImpl(this.gameSessionRI.getUsername(), this, this.froggerGameRI);
+            this.observer = new ObserverImpl();
         } catch (Exception e) {
             Logger.getLogger(ObserverImpl.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -100,9 +93,10 @@ public class FroggerClient extends JFrame {
         listDecorrer = new JList (getGamesDecorrer());
         novoJogo = new JButton ("Novo Jogo");
         atualizarUsers = new JButton ("Atualizar");
-        atualizarCriados = new JButton ("Atualizar C");
+        atualizarCriados = new JButton (this.username);
+        atualizarCriados.setEnabled(false);
         atualizarDecorrer = new JButton ("Atualizar D");
-        jcomp8 = new JLabel ("Users Online");
+        jcomp8 = new JLabel ("Bem-vindo, " + this.username);
         jcomp9 = new JLabel ("Jogos Criados");
         jcomp10 = new JLabel ("Jogos a Decorrer");
         okCriados = new JButton ("OK");
@@ -134,7 +128,7 @@ public class FroggerClient extends JFrame {
         atualizarUsers.setBounds (450, 10, 100, 25);
         atualizarCriados.setBounds (335, 130, 100, 25);
         atualizarDecorrer.setBounds (335, 260, 100, 25);
-        jcomp8.setBounds (30, 5, 100, 25);
+        jcomp8.setBounds (30, 5, 300, 25);
         jcomp9.setBounds (35, 130, 100, 25);
         jcomp10.setBounds (30, 260, 110, 25);
         okCriados.setBounds (435, 230, 100, 25);
@@ -154,31 +148,11 @@ public class FroggerClient extends JFrame {
             }
         } );
 
-        atualizarCriados.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    updateGamesCriados();
-                } catch (RemoteException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        } );
-
-        atualizarDecorrer.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    updateGamesDecorrer();
-                } catch (RemoteException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        } );
-
         novoJogo.addActionListener(new ActionListener(){
             public void actionPerformed(ActionEvent e) {
                 try {
                     createGame();
-                    froggerGameRI.startGame();
+                    updateGamesCriados();
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
                 }
@@ -191,9 +165,7 @@ public class FroggerClient extends JFrame {
                     if (listCriados.getSelectedValue() == null) {
                         JOptionPane.showMessageDialog(null, "Por favor selecione um jogo");
                     } else {
-                        FroggerGameRI game = (FroggerGameRI) listCriados.getSelectedValue();
-                        game.attach(observerRI);
-                        game.startGame();
+                        joinGame((FroggerGameRI) listCriados.getSelectedValue());
                     }
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
@@ -207,8 +179,8 @@ public class FroggerClient extends JFrame {
                     if (listDecorrer.getSelectedValue() == null) {
                         JOptionPane.showMessageDialog(null, "Por favor selecione um jogo");
                     } else {
-                        FroggerGameRI game = (FroggerGameRI) listDecorrer.getSelectedValue();
-                        game.attach(observerRI);
+                        joinGame((FroggerGameRI) listDecorrer.getSelectedValue());
+
                     }
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
@@ -218,21 +190,53 @@ public class FroggerClient extends JFrame {
 
     }
 
-    //TODO: Alterar
-    public void startGame() throws RemoteException {
-        froggerGameRI.attach(this.observerRI);
+    public void createGame() throws RemoteException {
+        this.dif = Integer.parseInt(JOptionPane.showInputDialog("Insira a dificuldade: "));
+        gameSessionRI.createGame1(this.dif);
     }
 
-    public FroggerGameRI createGame() throws RemoteException {
-        int dificuldade = Integer.parseInt(JOptionPane.showInputDialog("Insira a dificuldade: "));
-        froggerGameRI = gameSessionRI.createGame(dificuldade);
-        return froggerGameRI;
+    public void joinGame(FroggerGameRI froggerGameRI) throws RemoteException {
+        this.froggerGameRI = froggerGameRI;
+        this.froggerGameRI.setDificuldade(this.dif);
+        initObserver();
+        DB.getInstance().game = froggerGameRI;
+        observer.setUsername(this.username);
+        froggerGameRI.attachGame(observer);
     }
 
+    //Mostra os utilizadores online (com sessão iniciada)
     public DefaultListModel getSessions() throws RemoteException {
         DefaultListModel model = new DefaultListModel();
         HashMap<String, GameSessionRI> sessions = gameFactoryRI.getSessions();
-        model.addAll(sessions.keySet());
+        for (GameSessionRI session : sessions.values()) {
+            if (!Objects.equals(session.getUsername(), this.username)) {
+                model.addElement(session.getUsername());
+            }
+        }
+        return model;
+    }
+
+    public DefaultListModel getGamesDecorrer() throws RemoteException {
+        DefaultListModel model = new DefaultListModel();
+        HashMap<String, GameSessionRI> sessions = gameFactoryRI.getSessions();
+        for (GameSessionRI session : sessions.values()) {
+            if (!Objects.equals(session.getUsername(), this.username)) {
+                ArrayList<FroggerGameRI> games = session.getGames();
+                model.addAll(games);
+            }
+        }
+        return model;
+    }
+
+    public DefaultListModel getGamesCriados() throws RemoteException {
+        DefaultListModel model = new DefaultListModel();
+        HashMap<String, GameSessionRI> sessions = gameFactoryRI.getSessions();
+        for (GameSessionRI session : sessions.values()) {
+            if (Objects.equals(session.getUsername(), this.username)) {
+                ArrayList<FroggerGameRI> games = session.getGames();
+                model.addAll(games);
+            }
+        }
         return model;
     }
 
@@ -246,38 +250,8 @@ public class FroggerClient extends JFrame {
         listUsers.setModel(getSessions());
     }
 
-    public DefaultListModel getGamesDecorrer() throws RemoteException {
-        DefaultListModel model = new DefaultListModel();
-        HashMap<String, GameSessionRI> sessions = gameFactoryRI.getSessions();
-
-        for (GameSessionRI session : sessions.values()) {
-            HashMap<String, FroggerGameRI> games = session.getGames();
-            for (FroggerGameRI game : games.values()) {
-                model.addElement(game);
-            }
-        }
-
-        return model;
-    }
-
     public void updateGamesDecorrer() throws RemoteException {
         listDecorrer.setModel(getGamesDecorrer());
-    }
-
-    public DefaultListModel getGamesCriados() throws RemoteException {
-        DefaultListModel model = new DefaultListModel();
-        HashMap<String, GameSessionRI> sessions = gameFactoryRI.getSessions();
-
-        for (GameSessionRI session : sessions.values()) {
-            if (Objects.equals(session.getUsername(), this.username)) {
-                HashMap<String, FroggerGameRI> games = session.getGames();
-                for (FroggerGameRI game : games.values()) {
-                    model.addElement(game);
-                }
-            }
-        }
-
-        return model;
     }
 
     public void updateGamesCriados() throws RemoteException {
@@ -301,6 +275,7 @@ public class FroggerClient extends JFrame {
         });
     }
 
+
     private JList listUsers;
     private JList listCriados;
     private JList listDecorrer;
@@ -314,10 +289,11 @@ public class FroggerClient extends JFrame {
     private JButton okCriados;
     private JButton okDecorrer;
 
+    public ObserverImpl getObserver() {
+        return observer;
+    }
 
-
-    //FROGGER GAME
-
-
-
+    public void setObserver(ObserverImpl observer) {
+        this.observer = observer;
+    }
 }
